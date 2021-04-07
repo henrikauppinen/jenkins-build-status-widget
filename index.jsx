@@ -1,40 +1,38 @@
-import { css } from "uebersicht";
-export { updateState } from "./src/updateState";
-const TEN_MINUTES = 600000;
+import { css } from "uebersicht"
+export { updateState } from "./src/updateState"
 
 const options = {
   host: "",
-  auth: "Basic ",
-  refreshFrequency: TEN_MINUTES,
-};
+  auth: "", // BASE64 user:pass
+}
 
-export const refreshFrequency = options.refreshFrequency;
+export const refreshFrequency = 10 * 60 * 1000
 
 export const initialState = {
   data: [],
   jobs: [],
   searchRegex: "?!",
-};
+}
 
-const PROXY = "http://127.0.0.1:41417/";
+const proxy = "http://127.0.0.1:41417/"
 
 const api = async () =>
   await fetch(
     new URL(
-      `${PROXY}${options.host}/job/glass/api/json?tree=jobs[lastBuild[displayName,number,building,result,estimatedDuration,duration,url]]`
+      `${proxy}${options.host}api/json?tree=jobs[lastBuild[displayName,number,building,result,estimatedDuration,duration,url]]`
     ),
     {
       headers: {
-        Authorization: options.auth,
+        Authorization: "Basic " + options.auth,
       },
     }
-  );
+  )
 
 export const command = async (dispatch) => {
-  const response = await api();
-  const { jobs } = await response.json();
-  dispatch({ type: "FETCH_SUCCEEDED", jobs: jobs });
-};
+  const response = await api()
+  const { jobs } = await response.json()
+  dispatch({ type: "UPDATE_JOBS", jobs: jobs })
+}
 
 export const className = `
   width: 250px;
@@ -47,7 +45,7 @@ export const className = `
   font-weight: 300;
   color: rgba(255,255,255,.9);
   text-shadow: 0 1px 1px rgba(0,0,0,0.7);
-`;
+`
 
 const itemContainer = css`
   position: relative;
@@ -60,71 +58,71 @@ const itemContainer = css`
   background: rgba(255, 255, 255, 0.2);
   width: 100%;
   height: 50px;
-`;
+`
 
 const status = css`
   position: absolute;
   right: 3px;
   top: 0px;
   font-size: 20px;
-`;
+`
 
 const building = css`
   color: #cd853f;
-`;
+`
 
 const success = css`
   color: #3cb371;
-`;
+`
 
 const failure = css`
   color: #cd5c5c;
-`;
+`
 
 const titleLink = css`
   margin-bottom: 3px;
   margin-left: 3px;
   color: #ffffff;
   text-decoration: none;
-`;
+`
 
 const searchInput = css`
   width: 246px;
   border: 1px solid #aaa;
   background: rgba(255, 255, 255, 0.3);
   color: #fff;
-`;
+`
 
 const StatusBuilding = () => (
   <div className={status}>
     <span className={building}>Building</span>
   </div>
-);
+)
 const StatusFailure = () => (
   <div className={status}>
     <span className={failure}>Failure</span>
   </div>
-);
+)
 const StatusSuccess = () => (
   <div className={status}>
     <span className={success}>Success</span>
   </div>
-);
+)
 
 const Status = ({ pr }) => {
-  if (pr.building) return <StatusBuilding />;
-  if (pr.result === "FAILURE") return <StatusFailure />;
-  if (pr.result === "SUCCESS") return <StatusSuccess />;
-  return null;
-};
+  if (pr.building) return <StatusBuilding />
+  if (pr.result === "FAILURE") return <StatusFailure />
+  if (pr.result === "SUCCESS") return <StatusSuccess />
+  return null
+}
 
-const WidgetTitle = () => <span>Jenkins build tracker</span>;
+const WidgetTitle = () => <span>Jenkins build tracker</span>
 
 const Title = ({ pr }) => (
   <a className={titleLink} href={pr.url}>
     {pr.displayName}
   </a>
-);
+)
 
 const Progress = ({ current, estimate }) => {
   let styles = {
@@ -132,7 +130,7 @@ const Progress = ({ current, estimate }) => {
     background: "#ddd",
     height: "100%",
     width: `${(current / estimate) * 100}%`,
-  };
+  }
   return (
     <div
       style={{
@@ -144,10 +142,10 @@ const Progress = ({ current, estimate }) => {
     >
       <div style={styles}></div>
     </div>
-  );
-};
+  )
+}
 
-let searchTerm = "";
+let searchTerm = ""
 
 export const render = ({ data }, dispatch) => {
   return (
@@ -163,8 +161,8 @@ export const render = ({ data }, dispatch) => {
         ))}
         <form
           onSubmit={(e) => {
-            e.preventDefault();
-            dispatch({ type: "UPDATE_FILTER", searchRegex: searchTerm });
+            e.preventDefault()
+            dispatch({ type: "UPDATE_FILTER", searchRegex: searchTerm })
           }}
         >
           <input
@@ -177,5 +175,5 @@ export const render = ({ data }, dispatch) => {
         </form>
       </div>
     </div>
-  );
-};
+  )
+}
