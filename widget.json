@@ -1,0 +1,6 @@
+{
+  "name": "Jenkins tracker",
+  "description": "Track the status of Jenkins builds",
+  "author": "Henri Kauppinen",
+  "email": "kauppinen.henri@gmail.com"
+}
