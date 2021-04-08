@@ -19,7 +19,7 @@ const proxy = "http://127.0.0.1:41417/"
 const api = async () =>
   await fetch(
     new URL(
-      `${proxy}${options.host}api/json?tree=jobs[lastBuild[displayName,number,building,result,estimatedDuration,duration,url]]`
+      `${proxy}${options.host}api/json?tree=jobs[lastBuild[displayName,building,result,url]]`
     ),
     {
       headers: {
@@ -36,144 +36,130 @@ export const command = async (dispatch) => {
 
 export const className = `
   width: 250px;
-  right: 0px;
-  bottom: 0px;
-  font-family: Helvetica Neue;
+  left: 20px;
+  bottom: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(5px);
+  border-radius: 10px;
+  font-family: -apple-system, BlinkMacSystemFont;
   z-index: 1;
   padding: 20px;
   font-size: 12px;
-  font-weight: 300;
-  color: rgba(255,255,255,.9);
-  text-shadow: 0 1px 1px rgba(0,0,0,0.7);
+  line-heigth: 1.2;
+  color: #fffd;
+`
+
+const widgetTitle = css`
+  margin: 0 0 18px;
+  font-size: 14px;
 `
 
 const itemContainer = css`
-  position: relative;
+  max-height: 80vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-bottom: 15px;
+`
+
+const item = css`
   display: flex;
-  flex-flow: column;
-  flex-direction: column-reverse;
-  border-radius: 3px;
-  margin: 5px 0px;
-  padding: 5px 0px 0px 0px;
-  background: rgba(255, 255, 255, 0.2);
-  width: 100%;
-  height: 50px;
+  & + & {
+    margin-top: 15px;
+  }
 `
 
 const status = css`
-  position: absolute;
-  right: 3px;
-  top: 0px;
-  font-size: 20px;
+  flex: 0 0 12px;
+  display: inline-block;
+  height: 12px;
+  border-radius: 20px;
+  margin-top: 1px;
 `
 
 const building = css`
-  color: #cd853f;
+  background: #FFBD2D;
+  animation-name: building;
+  animation-duration: 3s;
+  animation-iteration-count: infinite;
+
+  @keyframes building {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
 `
 
 const success = css`
-  color: #3cb371;
+  background: #2BCA41;
 `
 
 const failure = css`
-  color: #cd5c5c;
+  background: #FF544D;
 `
 
 const titleLink = css`
-  margin-bottom: 3px;
-  margin-left: 3px;
-  color: #ffffff;
+  margin: 0 0 0 10px;
+  color: #fff;
   text-decoration: none;
+  vertical-align: top;
 `
 
 const searchInput = css`
-  width: 246px;
-  border: 1px solid #aaa;
-  background: rgba(255, 255, 255, 0.3);
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 12px;
+  padding: 5px 10px 6px;
+  border-radius: 5px;
+  border: 0;
+  box-shadow: inset 0 1px 0 #fff1, 0 1px 1px #0005;
+  background: #fff1;
   color: #fff;
+  &:focus {
+    outline: 0;
+  }
 `
 
-const StatusBuilding = () => (
-  <div className={status}>
-    <span className={building}>Building</span>
-  </div>
-)
-const StatusFailure = () => (
-  <div className={status}>
-    <span className={failure}>Failure</span>
-  </div>
-)
-const StatusSuccess = () => (
-  <div className={status}>
-    <span className={success}>Success</span>
-  </div>
-)
-
 const Status = ({ pr }) => {
-  if (pr.building) return <StatusBuilding />
-  if (pr.result === "FAILURE") return <StatusFailure />
-  if (pr.result === "SUCCESS") return <StatusSuccess />
-  return null
+  const statusClass = 
+    pr.building 
+      ? building 
+      : pr.result === 'SUCCESS' ? success : failure
+  
+  return (<span className={`${status} ${statusClass}`} />)
 }
-
-const WidgetTitle = () => <span>Jenkins build tracker</span>
-
-const Title = ({ pr }) => (
-  <a className={titleLink} href={pr.url}>
-    {pr.displayName}
-  </a>
-)
-
-const Progress = ({ current, estimate }) => {
-  let styles = {
-    borderRadius: "0px 3px 3px 3px",
-    background: "#ddd",
-    height: "100%",
-    width: `${(current / estimate) * 100}%`,
-  }
-  return (
-    <div
-      style={{
-        width: "100%",
-        background: "#777",
-        height: "3px",
-        borderRadius: "0px 0px 3px 3px",
-      }}
-    >
-      <div style={styles}></div>
-    </div>
-  )
-}
-
-let searchTerm = ""
 
 export const render = ({ data }, dispatch) => {
+  const updateSearchQuery = (e) => {
+    dispatch({ type: "UPDATE_FILTER", searchRegex: RegExp(e.target.value || "!!", 'i') })
+  }
+
   return (
     <div>
-      <div>
-        <WidgetTitle />
+      <h1 className={widgetTitle}>Jenkins build tracker</h1>
+      <div className={itemContainer}>
         {data.map((pr, key) => (
-          <div id={key} className={itemContainer}>
+          <div key={key} className={item}>
             <Status pr={pr} />
-            <Progress current={pr.duration} estimate={pr.estimatedDuration} />
-            <Title pr={pr} />
+            <a className={titleLink} href={pr.url}>
+              {pr.displayName}
+            </a>
           </div>
         ))}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            dispatch({ type: "UPDATE_FILTER", searchRegex: searchTerm })
-          }}
-        >
-          <input
-            type="text"
-            name="search"
-            className={searchInput}
-            onChange={(e) => (searchTerm = e.target.value)}
-          />
-          <input type="submit" hidden={true} />
-        </form>
       </div>
+      <input
+        type="text"
+        name="search"
+        className={searchInput}
+        onChange={updateSearchQuery}
+        autoComplete="false"
+        placeholder="Filter by branch name"
+      />
     </div>
   )
 }
